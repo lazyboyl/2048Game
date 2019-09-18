@@ -62,14 +62,14 @@ class GameConfig {
     }
 
     /**
-     * 文字颜色
+     * 文字颜色,获取的位置是在colors.xml
      */
     fun getBlockTextColor(value: Int): Int {
         return mContext.resources.getIdentifier("block_text_color$value", "color", mContext.packageName);
     }
 
     /**
-     * 背景图
+     * 背景图获取的位置实在drawable的block_bgx.xml中
      */
     fun getBlockBg(value: Int): Int {
         return mContext.resources.getIdentifier("block_bg$value", "drawable", mContext.packageName);
@@ -78,7 +78,7 @@ class GameConfig {
     /**
      * 有合并
      */
-    fun onMerged(value: Int) {
+    fun onMerged() {
         SoundPoolManager.play(SoundPoolManager.TYPE_MERGE)
     }
 
