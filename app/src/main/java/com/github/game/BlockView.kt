@@ -14,7 +14,7 @@ import kotlinx.android.synthetic.main.block_view_layout.view.*
  * @author linzf
  * @since 2019-09-18
  */
-class BlockView(context: Context, attributes: AttributeSet, attrs: AttributeSet?) : FrameLayout(context, attrs) {
+class BlockView(context: Context, attributes: AttributeSet) : FrameLayout(context, attributes) {
 
     /**
      * 方块中显示的值
@@ -27,7 +27,7 @@ class BlockView(context: Context, attributes: AttributeSet, attrs: AttributeSet?
     /**
      * 游戏的配置
      */
-    private lateinit var gameConfig: GameConfig
+    lateinit var gameConfig: GameConfig
 
     /**
      * 方块当前的值

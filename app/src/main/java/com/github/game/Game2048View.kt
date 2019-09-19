@@ -2,12 +2,16 @@ package com.github.game
 
 import android.content.Context
 import android.content.res.TypedArray
+import android.graphics.Point
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.widget.FrameLayout
+import com.github.game.GameUtil.Block
+import java.util.*
+import kotlin.math.abs
 
 /**
  * 类描述：2048的主入口类
@@ -15,6 +19,8 @@ import android.widget.FrameLayout
  * @since 2019-09-18
  */
 class Game2048View : FrameLayout {
+
+    lateinit var gameConfig: GameConfig
 
     companion object {
 
@@ -37,6 +43,26 @@ class Game2048View : FrameLayout {
      */
     private var mColumnSize: Int
 
+    /**
+     * 总分
+     */
+    private var totalScore: Int = 0
+
+    /**
+     * 当前计算到的最大值
+     */
+    private var mMaxValue: Int = 0
+
+    /**
+     * 方块的二维数组的数据
+     */
+    private lateinit var mBlockArray: Array<Array<Block>>
+
+    /**
+     * 滑动后剩余的空白位置
+     */
+    private var mEmptyPointList: ArrayList<Point> = ArrayList()
+
     constructor(context: Context, attrs: AttributeSet) : this(context, attrs, 0) {
         val vc = ViewConfiguration.get(getContext())
         mTouchSlop = vc.scaledTouchSlop
@@ -51,6 +77,16 @@ class Game2048View : FrameLayout {
         typeArray.recycle()
     }
 
+    /**
+     * 功能描述：开始游戏
+     */
+    fun start(){
+        Log.d(TAG, "开始游戏")
+        reset()
+        doNext(true)
+        mStarted = true
+    }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         val widthSize = View.MeasureSpec.getSize(widthMeasureSpec)
@@ -58,12 +94,95 @@ class Game2048View : FrameLayout {
         setMeasuredDimension(widthSize, widthSize)
     }
 
-    fun scroll(direction: GameUtil.Direction) {
+    /**
+     * 功能描述： 实现拇指移动的时候重新计算方块
+     * @param
+     */
+    private fun scroll(direction: GameUtil.Direction) {
         Log.d(TAG, "往" + direction + "滑动")
 
     }
 
+    /**
+     * 功能描述：生成方块页
+     * @param first true表示初始化生成，反之则不是
+     */
+    private fun doNext(first: Boolean) {
+        var gameStatus = checkGameOver()
+        if (gameStatus > 0) {
+            Log.d(TAG, "游戏结束")
+        }
+        // 生成方块的个数，true表示初始化生成2个，反之则生成1个
+        var randomCount = if (first) gameConfig.getFirstRandomCount() else gameConfig.getNormalRandomCount()
+        for (i in 0 until randomCount) {
+            if (mEmptyPointList.size == 0) {
+                break
+            }
+            // 从当前还没有被填充的数组中随机获取一个位置作为下次填充
+            var randomIndex = Random().nextInt(mEmptyPointList.size)
+            // 获取该位置的point的坐标体系，同时将该坐标移除空白列表
+            var point = mEmptyPointList.removeAt(randomIndex)
+            // 获取一个随机数
+            var randomValue = gameConfig.randomValue()
+            // 将生成的随机数赋给我们的方块二维数组
+            mBlockArray[point.y][point.x].value = randomValue
+            // 创建一个方块布局
+            var view = BlockView.create(context, point)
+            view.gameConfig = gameConfig
+            view.setNumber(randomValue)
+            // 将方块添加到当前的游戏组件中，且设置好了方块的大小
+            addView(view, LayoutParams(width / mColumnSize, width / mColumnSize))
+            // 设置距离X的0点的偏移量
+            view.translationX = (point.x * width.toFloat()) / mColumnSize
+            // 设置距离Y的0点的偏移量
+            view.translationY = (point.y * height.toFloat()) / mColumnSize
+            // 刷新界面
+            invalidate()
+            Log.d(TAG, "生成一个方块(" + point.x + "," + point.y + "),大小:" + randomValue)
+        }
+    }
+
+    /**
+     * 功能描述： 重置整个2048游戏的页面
+     */
+    private fun reset() {
+        Log.d(TAG, "初始化")
+        mStarted = false
+        totalScore = 0
+        mMaxValue = 0
+        onScoreChanged()
         /**
+         * 从当前视图中移除所有子视图
+         */
+        removeAllViews()
+        mEmptyPointList.clear()
+        /**
+         * 创建一个二维数组，同时存放block数据
+         */
+        mBlockArray = Array(mColumnSize) { y -> Array(mColumnSize) { x -> Block(x, y, 0) } }
+        /**
+         * 加载当前所有的位置为空的点的二维坐标的数据
+         */
+        for (y in 0 until mColumnSize) {
+            for (x in 0 until mColumnSize) {
+                mEmptyPointList.add(Point(x, y))
+            }
+        }
+    }
+
+    /**
+     * 功能描述： 判断游戏是否结束【1：赢得游戏；2：游戏结束；3：正常进行】
+     */
+    fun checkGameOver(): Int {
+        if(gameConfig.win(mMaxValue)){
+            return 1
+        } else if(mEmptyPointList.size == 0){
+            return 2
+        }
+        return 0
+    }
+
+    /**
      * 当前拇指按下时候的坐标的位置
      */
     private var touchDownX: Float = 0f
@@ -76,8 +195,8 @@ class Game2048View : FrameLayout {
     /**
      * 当前拇指移动的所在位置的坐标
      */
-    var tmpX = 0
-    var tmpY = 0
+    var tmpX = 0f
+    var tmpY = 0f
 
     /**
      * 触屏事件的处理
@@ -95,10 +214,10 @@ class Game2048View : FrameLayout {
             MotionEvent.ACTION_MOVE -> {
                 // 表示一次正常的操作行为
                 if (mStarted && !scrolled) {
-                    var tmpX = event.x
-                    var tmpY = event.y
-                    var deltaX = Math.abs(tmpX - touchDownX)
-                    var deltaY = Math.abs(tmpY - touchDownY)
+                    tmpX = event.x
+                    tmpY = event.y
+                    var deltaX = abs(tmpX - touchDownX)
+                    var deltaY = abs(tmpY - touchDownY)
                     if (deltaX > deltaY && deltaX > mTouchSlop) {
                         scroll(if (tmpX > touchDownX) GameUtil.Direction.Right else GameUtil.Direction.Left)
                         scrolled = true
@@ -110,6 +229,13 @@ class Game2048View : FrameLayout {
             }
         }
         return true
+    }
+
+    /**
+     * 当分数发生变化的时候，需要通知父组件去更新分数的值
+     */
+    private fun onScoreChanged() {
+        (context as MainActivity).onScoreChanged(totalScore)
     }
 
 
