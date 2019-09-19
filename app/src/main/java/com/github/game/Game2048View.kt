@@ -63,6 +63,12 @@ class Game2048View : FrameLayout {
      */
     private var mEmptyPointList: ArrayList<Point> = ArrayList()
 
+    /**
+     * 滑动后需要移动 的Action
+     */
+    private var mActionList: ArrayList<Block> = ArrayList()
+    private var mGameUtil = GameUtil()
+
     constructor(context: Context, attrs: AttributeSet) : this(context, attrs, 0) {
         val vc = ViewConfiguration.get(getContext())
         mTouchSlop = vc.scaledTouchSlop
@@ -100,6 +106,10 @@ class Game2048View : FrameLayout {
      */
     private fun scroll(direction: GameUtil.Direction) {
         Log.d(TAG, "往" + direction + "滑动")
+        mEmptyPointList.clear()
+        mActionList.clear()
+
+        mGameUtil.scroll(mBlockArray, direction)
 
     }
 
@@ -125,7 +135,7 @@ class Game2048View : FrameLayout {
             // 获取一个随机数
             var randomValue = gameConfig.randomValue()
             // 将生成的随机数赋给我们的方块二维数组
-            mBlockArray[point.y][point.x].value = randomValue
+            mBlockArray[point.x][point.y].value = randomValue
             // 创建一个方块布局
             var view = BlockView.create(context, point)
             view.gameConfig = gameConfig
@@ -133,9 +143,9 @@ class Game2048View : FrameLayout {
             // 将方块添加到当前的游戏组件中，且设置好了方块的大小
             addView(view, LayoutParams(width / mColumnSize, width / mColumnSize))
             // 设置距离X的0点的偏移量
-            view.translationX = (point.x * width.toFloat()) / mColumnSize
+            view.translationX = (point.y * width.toFloat()) / mColumnSize
             // 设置距离Y的0点的偏移量
-            view.translationY = (point.y * height.toFloat()) / mColumnSize
+            view.translationY = (point.x * height.toFloat()) / mColumnSize
             // 刷新界面
             invalidate()
             Log.d(TAG, "生成一个方块(" + point.x + "," + point.y + "),大小:" + randomValue)
@@ -159,7 +169,7 @@ class Game2048View : FrameLayout {
         /**
          * 创建一个二维数组，同时存放block数据
          */
-        mBlockArray = Array(mColumnSize) { y -> Array(mColumnSize) { x -> Block(x, y, 0) } }
+        mBlockArray = Array(mColumnSize) { x -> Array(mColumnSize) { y -> Block(x, y, 0) } }
         /**
          * 加载当前所有的位置为空的点的二维坐标的数据
          */
@@ -173,7 +183,7 @@ class Game2048View : FrameLayout {
     /**
      * 功能描述： 判断游戏是否结束【1：赢得游戏；2：游戏结束；3：正常进行】
      */
-    fun checkGameOver(): Int {
+    private fun checkGameOver(): Int {
         if(gameConfig.win(mMaxValue)){
             return 1
         } else if(mEmptyPointList.size == 0){
