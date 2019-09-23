@@ -29,25 +29,25 @@ class GameUtil {
      * 2,3,4,5
      * 3,4,5,6
      */
-    fun scroll(
-        array: Array<Array<Block>>,
-        direction: Direction,
-        listPoint: ArrayList<Point>,
-        listAction: ArrayList<Block>
-    ) {
-        onStartScroll(array)
-        dumpArray(array, "original")
-        if (direction != Direction.Right) {
-            convert(array, direction, false)
-            dumpArray(array, "after convert")
-        }
-
-    }
+//    fun scroll(
+//        array: Array<Array<Block>>,
+//        direction: Direction,
+//        listPoint: ArrayList<Point>,
+//        listAction: ArrayList<Block>
+//    ) {
+//        onStartScroll(array)
+//        dumpArray(array, "original")
+//        if (direction != Direction.Right) {
+//            convert(array, direction, false)
+//            dumpArray(array, "after convert")
+//        }
+//
+//    }
 
     /**
      * 功能描述： 实现滑块的移动和相加
      */
-    fun scroll(array: Array<Array<Block>>, direction: Direction) {
+    fun scroll(array: Array<Array<Block>>, direction: Direction,listPoint: ArrayList<Point>,listAction: ArrayList<Block>) {
         var size: Int = array.size
         var largeIndexValue = 0
         var lastLargeIndex = -1
@@ -58,31 +58,96 @@ class GameUtil {
             }
             // 向上移动滑块
             Direction.Top -> {
-                largeIndexValue = 0
-                lastLargeIndex = -1
                 dumpArray(array, "original")
-                for (x in (size - 1 downTo 1)) {
-                    for (y in (0 until size)) {
-                        if (array[x - 1][y].value != 0 && lastLargeIndex === -1) {
-                            largeIndexValue = array[x - 1][y].value
-                            lastLargeIndex = x - 1
-                        }
-                        // 表示当前节点的值为0
-                        if (array[x][y].value == 0) {
-                            continue
-                        } else if (largeIndexValue == 0) {
+                for (y in (0 until size)) {
+                    // 初始化最大值为最下的值
+                    largeIndexValue = array[size - 1][y].value
+                    lastLargeIndex = size - 1
+                    for (x in (size - 2 downTo 0)) {
+                        if (array[x][y].value === 0) {
                             continue
                         }
-                        if (array[x][y].value == largeIndexValue && x != lastLargeIndex) {
-                            array[x - 1][y].value = array[x][y].value * 2
-                            array[x][y].value = 0
-                            largeIndexValue = 0
-                            lastLargeIndex = -1
+                        if (array[x][y].value === largeIndexValue) {
+                            array[x][y].value = largeIndexValue * 2
+                            array[lastLargeIndex][y].value = 0
+                            array[lastLargeIndex][y].merged = true;
+                            // 如果当前的遍历的x大于0那么我们就将当前的最大值设置为下一个需要遍历的值
+                            if (x > 0) {
+                                largeIndexValue = array[x - 1][y].value
+                                lastLargeIndex = x - 1
+                            }
+                            continue
+                        } else {
+                            largeIndexValue = array[x][y].value
+                            lastLargeIndex = x
                         }
                     }
                 }
                 dumpArray(array, "after convert")
+                /**
+                 * 完成加减以后，然后再实现方块的移动
+                 */
+                removeOnBlank(array, direction);
 
+                /**
+                 * 获取当前移动完成以后的剩余的为0的空格
+                 */
+                getBlank(array,listPoint)
+            }
+            // 向右移动滑块
+            Direction.Right -> {
+
+            }
+            // 向下移动滑块
+            Direction.Bottom -> {
+
+            }
+        }
+    }
+
+    /**
+     * 功能描述：获取当前移动完成以后的剩余的为0的空格
+     * @param array 方块二维数组
+     * @param listPoint 剩余可填充的方块数据
+     */
+    fun getBlank(array: Array<Array<Block>>, listPoint: ArrayList<Point>) {
+        var size: Int = array.size;
+        for (y in (0 until size)) {
+            for (x in (0 until size)) {
+                if ((array[y])[x].value == 0) {
+                    listPoint.add(Point(x, y))
+                }
+            }
+        }
+    }
+
+    /**
+     * 功能描述： 将非0数据往0数据方向移动
+     */
+    private fun removeOnBlank(array: Array<Array<Block>>, direction: Direction) {
+        var size: Int = array.size
+        when (direction) {
+            // 向左移动滑块
+            Direction.Left -> {
+
+            }
+            // 向上移动滑块
+            Direction.Top -> {
+                dumpArray(array, "original")
+                for (y in (0 until size)) {
+                    for (x in (0 until size)) {
+                        if (array[x][y].value === 0 && x != size) {
+                            for (z in (x until size)) {
+                                if (array[z][y].value > 0 && z != x) {
+                                    array[x][y].value = array[z][y].value
+                                    array[z][y].value = 0
+                                    break
+                                }
+                            }
+                        }
+                    }
+                }
+                dumpArray(array, "after convert")
             }
             // 向右移动滑块
             Direction.Right -> {

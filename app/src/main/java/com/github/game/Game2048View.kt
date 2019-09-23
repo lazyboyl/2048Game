@@ -86,7 +86,7 @@ class Game2048View : FrameLayout {
     /**
      * 功能描述：开始游戏
      */
-    fun start(){
+    fun start() {
         Log.d(TAG, "开始游戏")
         reset()
         doNext(true)
@@ -109,7 +109,7 @@ class Game2048View : FrameLayout {
         mEmptyPointList.clear()
         mActionList.clear()
 
-        mGameUtil.scroll(mBlockArray, direction)
+        mGameUtil.scroll(mBlockArray, direction, mEmptyPointList, mActionList)
 
     }
 
@@ -184,9 +184,9 @@ class Game2048View : FrameLayout {
      * 功能描述： 判断游戏是否结束【1：赢得游戏；2：游戏结束；3：正常进行】
      */
     private fun checkGameOver(): Int {
-        if(gameConfig.win(mMaxValue)){
+        if (gameConfig.win(mMaxValue)) {
             return 1
-        } else if(mEmptyPointList.size == 0){
+        } else if (mEmptyPointList.size == 0) {
             return 2
         }
         return 0
