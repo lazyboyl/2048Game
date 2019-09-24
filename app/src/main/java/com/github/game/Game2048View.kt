@@ -1,5 +1,6 @@
 package com.github.game
 
+import android.animation.*
 import android.content.Context
 import android.content.res.TypedArray
 import android.graphics.Point
@@ -54,6 +55,11 @@ class Game2048View : FrameLayout {
     private var mMaxValue: Int = 0
 
     /**
+     * 动画的移动的时间
+     */
+    private val mDuration: Long = 300
+
+    /**
      * 方块的二维数组的数据
      */
     private lateinit var mBlockArray: Array<Array<Block>>
@@ -91,6 +97,50 @@ class Game2048View : FrameLayout {
         reset()
         doNext(true)
         mStarted = true
+        doActionTest()
+    }
+
+
+    private fun doActionTest() {
+        var animatorSet: AnimatorSet = AnimatorSet()
+        var size: Int = mBlockArray.size
+        for (y in (0 until size)) {
+            for (x in (0 until size)) {
+                var blockView = getView(x, y) ?: continue
+                println("x=>" + blockView.point.x + ",y=>" + blockView.point.y)
+                var scrollHorizontal: Boolean = true
+
+                var startOffset = (width * blockView.point.x).toFloat() / mColumnSize
+                var targetOffset = (width * 0).toFloat() / mColumnSize
+
+                Log.d(TAG,  " 像素从" + startOffset + "到" + targetOffset)
+
+                var animation: ValueAnimator = ObjectAnimator.ofFloat(blockView, (if (scrollHorizontal) "translationX" else "translationY"), startOffset, targetOffset)
+
+                animation.duration = mDuration
+                animation.addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator?) {
+                        Log.d(TAG,  " ==完成,像素:" + (if (scrollHorizontal) blockView.translationX else blockView.translationY))
+                    }
+
+                    override fun onAnimationStart(animation: Animator?) {
+                        //修改View中的坐标,不等动画结束
+                        blockView.point.x = 0
+                        blockView.point.y = blockView.point.y
+                    }
+                })
+
+                animation.addUpdateListener { animator ->
+                    var currentTranslation = (animator!!.animatedValue as Float)
+
+                    if (targetOffset > startOffset) {
+
+                    }
+                }
+                animatorSet.playSequentially(animation)
+            }
+            animatorSet.start()
+        }
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -111,6 +161,70 @@ class Game2048View : FrameLayout {
 
         mGameUtil.scroll(mBlockArray, direction, mEmptyPointList, mActionList)
 
+        doActionAnimation(direction)
+
+    }
+
+    private fun doActionAnimation(direction: GameUtil.Direction) {
+        var animatorSet: AnimatorSet = AnimatorSet()
+        animatorSet.duration = mDuration
+        mActionList.forEach {
+            val needRemoveView = it.remove
+            var removeTranslation: Float = 0F
+            var targetRemoveView: BlockView? = null
+            when (direction) {
+                // 向左移动滑块
+                GameUtil.Direction.Left -> {
+
+                }
+                // 向上移动滑块
+                GameUtil.Direction.Top -> {
+                    if (needRemoveView) {
+                        removeTranslation = abs((it.changeX * width).toFloat() / mColumnSize)
+                        targetRemoveView = getView(it.changeX, it.changeY)
+                        removeView(targetRemoveView)
+                    } else {
+                        // 表示当前的动画是移动，播放移动的声音
+                        gameConfig.onMove()
+                    }
+
+
+                    var startOffset = (width * it.pY).toFloat() / mColumnSize
+                    var targetOffset = (width * it.y).toFloat() / mColumnSize
+
+                    Log.d(TAG, it.getActionStr() + " 像素从" + startOffset + "到" + targetOffset)
+                    if (it.merged) {
+                        var view: BlockView? = getView(it.x, it.y)
+                        // 设置距离X的0点的偏移量
+                        view!!.translationX = (it.x * width.toFloat()) / mColumnSize
+                        // 设置距离Y的0点的偏移量
+                        view!!.translationY = (it.y * height.toFloat()) / mColumnSize
+                    }
+                    invalidate()
+
+                }
+                // 向右移动滑块
+                GameUtil.Direction.Right -> {
+
+                }
+                // 向下移动滑块
+                GameUtil.Direction.Bottom -> {
+
+                }
+            }
+
+        }
+
+    }
+
+    private fun getView(x: Int, y: Int): BlockView? {
+        for (index in 0 until childCount) {
+            var child = (getChildAt(index) as BlockView)
+            if (child.point.x == x && child.point.y == y) {
+                return child
+            }
+        }
+        return null
     }
 
     /**

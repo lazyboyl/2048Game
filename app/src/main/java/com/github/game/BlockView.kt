@@ -34,6 +34,9 @@ class BlockView(context: Context, attributes: AttributeSet) : FrameLayout(contex
      */
     private var value: Int = 0
 
+    var needRemoveView: Boolean = false
+    var removeTranslation: Float = 0F
+
     /**
      * 方块所在的坐标
      */

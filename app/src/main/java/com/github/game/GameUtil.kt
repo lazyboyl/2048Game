@@ -93,6 +93,11 @@ class GameUtil {
                  * 获取当前移动完成以后的剩余的为0的空格
                  */
                 getBlank(array,listPoint)
+
+                /**
+                 * 获取当前需要移动的方块
+                 */
+                getAction(array,listAction)
             }
             // 向右移动滑块
             Direction.Right -> {
@@ -101,6 +106,17 @@ class GameUtil {
             // 向下移动滑块
             Direction.Bottom -> {
 
+            }
+        }
+    }
+
+    private fun getAction(array: Array<Array<Block>>, listAction: ArrayList<Block>) {
+        var size: Int = array.size;
+        for (x in (0 until size)) {
+            for (y in (0 until size)) {
+                if (array[x][y].merged || array[x][y].remove) {
+                    listAction.add((array[x])[y].copy())
+                }
             }
         }
     }
@@ -139,8 +155,16 @@ class GameUtil {
                         if (array[x][y].value === 0 && x != size) {
                             for (z in (x until size)) {
                                 if (array[z][y].value > 0 && z != x) {
+                                    var pX = array[x][y].pX
+                                    var pY = array[x][y].pY
                                     array[x][y].value = array[z][y].value
+                                    array[x][y].pX = array[z][y].pX
+                                    array[x][y].pY = array[z][y].pY
+                                    array[x][y].merged = true
                                     array[z][y].value = 0
+                                    array[z][y].pX = pX
+                                    array[z][y].pY = pY
+                                    array[z][y].remove = true
                                     break
                                 }
                             }
@@ -246,13 +270,15 @@ class GameUtil {
         var pValue: Int = value,
         var changeX: Int = -1,
         var changeY: Int = -1,
-        var merged: Boolean = false
+        var merged: Boolean = false,
+        var remove: Boolean = false
     ) {
         fun reset() {
             pX = x
             pY = y
             pValue = value
             merged = false
+            remove = false
             changeX = -1
             changeY = -1
         }
